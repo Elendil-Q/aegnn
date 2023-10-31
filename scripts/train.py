@@ -4,14 +4,20 @@ import os
 import pytorch_lightning as pl
 import pytorch_lightning.loggers
 import wandb
+import sys
 
+sys.path.append('..')
 import aegnn
+
+os.environ["AEGNN_LOG_DIR"] = '/home/elendil/CODE/aegnn/runs/exp1'
+os.environ['AEGNN_DATA_DIR'] = '/home/elendil/DATA/AEGNN'
 
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("model", type=str, help="Model name to train.")
-    parser.add_argument("--task", type=str, required=True, help="Task to perform, such as detection or recognition.")
+    parser.add_argument("--model", type=str, default='graph_res', help="Model name to train.")
+    parser.add_argument("--task", type=str, default='recognition',
+                        help="Task to perform, such as detection or recognition.")
     parser.add_argument("--dim", type=int, help="Dimensionality of input data", default=3)
     parser.add_argument("--seed", default=12345, type=int)
 
@@ -26,7 +32,7 @@ def parse_args():
     parser.add_argument("--log-gradients", action="store_true")
     parser.add_argument("--profile", action="store_true")
     parser.add_argument("--debug", action="store_true")
-    parser.add_argument("--gpu", default=None, type=int)
+    parser.add_argument("--gpu", default=0, type=int)
 
     parser = aegnn.datasets.EventDataModule.add_argparse_args(parser)
     return parser.parse_args()

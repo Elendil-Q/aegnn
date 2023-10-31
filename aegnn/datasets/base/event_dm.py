@@ -137,10 +137,10 @@ class EventDataModule(pl.LightningDataModule):
     #########################################################################################################
     @classmethod
     def add_argparse_args(cls, parent_parser: argparse.ArgumentParser, **kwargs) -> argparse.ArgumentParser:
-        parent_parser.add_argument("--dataset", action="store", type=str, required=True)
+        parent_parser.add_argument("--dataset", action="store", type=str, default='ncars')
 
         group = parent_parser.add_argument_group("Data")
-        group.add_argument("--batch-size", action="store", default=8, type=int)
+        group.add_argument("--batch-size", action="store", default=1, type=int)
         group.add_argument("--num-workers", action="store", default=8, type=int)
         group.add_argument("--pin-memory", action="store_true")
         return parent_parser
