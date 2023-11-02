@@ -1,8 +1,8 @@
 import torch
 import torch_geometric
 import pytorch_lightning as pl
-import pytorch_lightning.metrics.functional as pl_metrics
-
+# import pytorch_lightning.metrics.functional as pl_metrics
+import torchmetrics.functional as pl_metrics
 from torch.nn.functional import softmax
 from typing import Tuple
 from .networks import by_name as model_by_name

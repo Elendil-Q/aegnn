@@ -68,9 +68,9 @@ def main(args):
     ]
 
     trainer_kwargs = dict()
-    trainer_kwargs["gpus"] = 2 if args.gpu is not None else None
+    trainer_kwargs["gpus"] = 1 if args.gpu is not None else None
     # trainer_kwargs["devices"] = [0, 1]
-    trainer_kwargs["accelerator"] = "ddp"
+    trainer_kwargs["accelerator"] = "gpu"
     trainer_kwargs["profiler"] = "simple" if args.profile else False
     trainer_kwargs["weights_summary"] = "full"
     trainer_kwargs["track_grad_norm"] = 2 if args.log_gradients else -1
