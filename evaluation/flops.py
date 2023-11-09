@@ -11,6 +11,8 @@ from torch_geometric.data import Data
 from tqdm import tqdm
 from typing import List
 
+os.environ['AEGNN_DATA_DIR'] = '/home/elendil/DATA/AEGNN'
+
 
 def parse_args():
     parser = argparse.ArgumentParser()
@@ -28,7 +30,9 @@ def parse_args():
 def sample_initial_data(sample, num_events: int, radius: float, edge_attr, max_num_neighbors: int):
     data = Data(x=sample.x[:num_events], pos=sample.pos[:num_events])
     data.batch = torch.zeros(data.num_nodes, device=data.x.device)
+    # 只要时空距离在radius以内就会视为邻域
     data.edge_index = torch_geometric.nn.radius_graph(data.pos, r=radius, max_num_neighbors=max_num_neighbors).long()
+
     data.edge_attr = edge_attr(data).edge_attr
 
     edge_counts_avg = data.edge_index.shape[1] / num_events
@@ -37,6 +41,20 @@ def sample_initial_data(sample, num_events: int, radius: float, edge_attr, max_n
 
 
 def create_and_run_model(dm, num_events: int, index: int, device: torch.device, args: argparse.Namespace, **kwargs):
+    """
+
+    Args:
+        dm: data_module
+        num_events:
+        index: 数据序列在数据集中的序号
+        device:
+        args:
+        **kwargs:
+
+    Returns:
+
+    """
+    # 没有图注意力机制，edge_attr是定值,根据x,y坐标得到？？为什么不用时间戳？？
     edge_attr = torch_geometric.transforms.Cartesian(cat=False, max_value=10.0)
     dataset = dm.train_dataset
     assert dm.shuffle is False  # ensuring same samples over experiments
@@ -45,14 +63,17 @@ def create_and_run_model(dm, num_events: int, index: int, device: torch.device, 
     # dataset, and create the subsequent event as the one to be added.
     sample = dataset[index % len(dataset)]
     sample.pos = sample.pos[:, :2]
+
+    # 首先进行事件采样，作为GNN的初始事件
     events_initial = sample_initial_data(sample, num_events, args.radius, edge_attr, args.max_num_neighbors)
 
-    index_new = min(num_events, sample.num_nodes - 1)
+    index_new = min(num_events, sample.num_nodes - 1)  # 无论如何得有点作为新的输入
     x_new = sample.x[index_new, :].view(1, -1)
     pos_new = sample.pos[index_new, :2].view(1, -1)
     event_new = Data(x=x_new, pos=pos_new, batch=torch.zeros(1, dtype=torch.long))
 
     # Initialize model and make it asynchronous (recognition model, so num_outputs = num_classes of input dataset).
+    # dm.dims=(w, h)
     input_shape = torch.tensor([*dm.dims, events_initial.pos.shape[-1]], device=device)
     model = aegnn.models.networks.GraphRes(dm.name, input_shape, dm.num_classes, pooling_size=args.pooling_size)
     model.to(device)

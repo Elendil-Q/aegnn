@@ -1,10 +1,13 @@
 import argparse
 import pytorch_lightning as pl
 import torch
-
+import os
 import sys
+
 sys.path.append('..')
 import aegnn
+
+os.environ['AEGNN_DATA_DIR'] = '/home/elendil/DATA/AEGNN'
 
 
 def parse_args():

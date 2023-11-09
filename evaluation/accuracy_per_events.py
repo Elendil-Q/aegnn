@@ -12,12 +12,19 @@ from torch_geometric.utils import subgraph
 from tqdm import tqdm
 from typing import Iterable, Tuple
 
+os.environ['AEGNN_DATA_DIR'] = '/home/elendil/DATA/AEGNN'
+
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("model_file", help="Path of model to evaluate.")
-    parser.add_argument("--device", default="cpu")
+    parser.add_argument("--model_file", default='/home/elendil/CODE/aegnn/last.ckpt', help="Path of model to evaluate.")
+    parser.add_argument("--device", default="gpu")
     parser.add_argument("--debug", action="store_true")
+    parser.add_argument("--model", type=str, default='graph_res', help="Model name to train.")
+    parser.add_argument("--task", type=str, default='recognition',
+                        help="Task to perform, such as detection or recognition.")
+    parser.add_argument("--dim", type=int, help="Dimensionality of input data", default=3)
+
     parser = aegnn.datasets.EventDataModule.add_argparse_args(parser)
     return parser.parse_args()
 
@@ -73,7 +80,7 @@ def main(args, model, data_module):
     output_file = os.path.join(output_dir, "accuracy_per_events.pkl")
 
     for max_count in tqdm(max_num_events):
-        data_loader = data_module.val_dataloader(num_workers=16).__iter__()
+        data_loader = data_module.val_dataloader(num_workers=4).__iter__()
         accuracy = evaluate(model, data_loader, max_num_events=max_count)
         logging.debug(f"Evaluation with max_num_events = {max_count} => Recognition accuracy = {accuracy}")
 
@@ -89,8 +96,10 @@ if __name__ == '__main__':
     if args.debug:
         _ = aegnn.utils.loggers.LoggingLogger(None, name="debug")
 
-    model_eval = torch.load(args.model_file).to(args.device)
+    checkpoint = torch.load(args.model_file)
     dm = aegnn.datasets.by_name(args.dataset).from_argparse_args(args)
     dm.setup()
-
+    model_eval = aegnn.models.RecognitionModel(args.model, args.dataset, num_classes=dm.num_classes,
+                                               img_shape=dm.dims, dim=args.dim, bias=True, root_weight=True)
+    model_eval.load_state_dict(checkpoint['state_dict'])
     main(args, model_eval, dm)
